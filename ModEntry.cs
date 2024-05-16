@@ -14,6 +14,9 @@ using StardewValley.Objects;
 using System.Reflection;
 using Microsoft.Scripting.Runtime;
 using StardewValley.Locations;
+using System.Threading;
+using System.Xml.Linq;
+using StardewValley.Buffs;
 
 
 
@@ -30,9 +33,15 @@ namespace MutantRings
         [XmlIgnore]
         public static NetBool hasUsedDarkPhoenixRevive = new NetBool(value: false);
 
-        private static int fuckitall = 0;
+        [XmlIgnore]
+        public static NetBool hasUsedMadelyneRevive = new NetBool(value: false);
 
-       // private static readonly AccessTools.FieldRef<Ring, int?> lightSourceField = AccessTools.FieldRefAccess<Ring, int?>("_lightSourceID");
+        private static int fuckitall;
+        private static int fuckme;
+        public static bool MystiqueHeal;
+        public static bool StormStrike;
+
+        // private static readonly AccessTools.FieldRef<Ring, int?> lightSourceField = AccessTools.FieldRefAccess<Ring, int?>("_lightSourceID");
 
         private static FieldInfo lightSource = typeof(Ring).GetField("_lightSourceID", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
 
@@ -42,6 +51,7 @@ namespace MutantRings
             AMonitor = Monitor;
             AHelper = helper;
 
+            helper.Events.GameLoop.OneSecondUpdateTicked += GameLoop_OneSecondUpdateTicked;
 
             var harmony = new Harmony(ModManifest.UniqueID);
 
@@ -60,34 +70,83 @@ namespace MutantRings
               original: AccessTools.Method(typeof(Farmer), nameof(Farmer.takeDamage)),
               postfix: new HarmonyMethod(typeof(ModEntry), nameof(ModEntry.Farmer_takeDamage_Postfix))
            );
-            /*
+            
             harmony.Patch(
-             original: AccessTools.PropertyGetter(typeof(Monster), nameof(Monster.focusedOnFarmers)),
+            // original: AccessTools.PropertyGetter(typeof(Monster), nameof(Monster.focusedOnFarmers)),
+            original: AccessTools.PropertyGetter(typeof(Monster), nameof(Monster.focusedOnFarmers)),
              postfix: new HarmonyMethod(typeof(ModEntry), nameof(ModEntry.Monster_focusedOnFarmer_Postfix))
-          );
-            */
+             );
+            
 
 
             harmony.Patch(
               original: AccessTools.Method(typeof(Ring), nameof(Ring.update)),
               postfix: new HarmonyMethod(typeof(ModEntry), nameof(ModEntry.Ring_Update_Postfix))
-           );
+            );
+
+            harmony.Patch(
+            original: AccessTools.Method(typeof(Ring), nameof(Ring.onNewLocation)),
+            postfix: new HarmonyMethod(typeof(ModEntry), nameof(ModEntry.Ring_onNewLocation_Postfix))
+            );
+
+            harmony.Patch(
+            original: AccessTools.Method(typeof(Ring), nameof(Ring.onLeaveLocation)),
+            postfix: new HarmonyMethod(typeof(ModEntry), nameof(ModEntry.Ring_onLeaveLocation_Postfix))
+            );
+
+            harmony.Patch(
+            original: AccessTools.Method(typeof(Ring), nameof(Ring.onMonsterSlay)),
+            postfix: new HarmonyMethod(typeof(ModEntry), nameof(ModEntry.Ring_onMonsterSlay_Postfix))
+            );
+
+            harmony.Patch(
+            original: AccessTools.Method(typeof(Ring), nameof(Ring.AddEquipmentEffects)),
+            postfix: new HarmonyMethod(typeof(ModEntry), nameof(ModEntry.Ring_AddEquipmentEffects_Postfix))
+            );
 
 
         }
 
-        /*
-        private static bool Monster_focusedOnFarmer_Postfix(Monster __instance)
+        private void GameLoop_OneSecondUpdateTicked(object? sender, StardewModdingAPI.Events.OneSecondUpdateTickedEventArgs e)
+        {
+          if(e.IsMultipleOf(2))
+            {
+                MystiqueHeal = false;
+            }
+
+          if(e.IsMultipleOf(4))
+            {
+                StormStrike = false;
+            }
+            if (e.IsMultipleOf(20))
+            {
+                if (Game1.player.isWearingRing("ApryllForever.MutantRings_WolverineRing"))
+                {
+                    if (Game1.player.health < Game1.player.maxHealth)
+                    {
+                        Random rnd = new Random();
+                        int heal = rnd.Next(12, 23);
+
+                        Game1.player.health = Math.Min(Game1.player.maxHealth, Game1.player.health + heal);
+
+                    }
+
+                }
+            }
+
+        }
+
+        private static void Monster_focusedOnFarmer_Postfix(Monster __instance, ref bool __result)
         {
             if(Game1.player.isWearingRing("ApryllForever.MutantRings_ShadowCatRing"))
             {
-                __instance.focusedOnFarmers = false;
-                return false;
+                __result = __instance.netFocusedOnFarmers.Value = false;
+               // return false;
             }
 
-            return true;
-        }
-        */
+           // return true;
+        } 
+        
 
         private static void Ring_OnEquip_Postfix(Ring __instance, Farmer who)
         {
@@ -100,18 +159,18 @@ namespace MutantRings
 
             // lightSource.SetValue(__instance, (int)__instance.uniqueID + (int)who.UniqueMultiplayerID);
 
-            int jewel = (int)__instance.uniqueID + (int)who.UniqueMultiplayerID;
+            
 
 
-            if (__instance.Name.Equals("ApryllForever.MutantRings_DarkPhoenixRing"))
+            if (__instance.Name.Equals("Dark Phoenix Ring"))
                 {
-
+                int jewel = (int)__instance.uniqueID + (int)who.UniqueMultiplayerID;
                 while (location.sharedLights.ContainsKey(jewel))
                 {
-                    jewel = jewel + 1;
+                    jewel = jewel + 1; //Named after Jewel the singer!
                 }
 
-                location.sharedLights[jewel] = new LightSource(1, new Vector2(who.Position.X + 21f, who.Position.Y + 64f), 5f, new Color(0, 50, 170), (int)__instance.uniqueID + (int)who.UniqueMultiplayerID, LightSource.LightContext.None, who.UniqueMultiplayerID);
+                location.sharedLights[jewel] = new LightSource(1, new Vector2(who.Position.X + 21f, who.Position.Y + 64f), 5f, new Color(0, 170, 0), (int)__instance.uniqueID + (int)who.UniqueMultiplayerID, LightSource.LightContext.None, who.UniqueMultiplayerID);
 
                 fuckitall = jewel;
              
@@ -126,14 +185,29 @@ namespace MutantRings
                 //  Game1.player.glowingTransparency = 1f;
                 //}
             }
+
+
+            if (__instance.Name.Equals("Goblin Queen Ring"))
+            {
+                int britney = (int)__instance.uniqueID + (int)who.UniqueMultiplayerID;
+                while (location.sharedLights.ContainsKey(britney))
+                {
+                    britney = britney + 1; //Free Britney!!!
+                }
+
+                location.sharedLights[britney] = new LightSource(1, new Vector2(who.Position.X + 21f, who.Position.Y + 64f), 5f, new Color(124, 170, 0), (int)__instance.uniqueID + (int)who.UniqueMultiplayerID, LightSource.LightContext.None, who.UniqueMultiplayerID);
+
+                fuckme = britney; //If U seek Amy
+            }
         }
 
-        private static void Ring_OnUnequip_Postfix(Ring __instance, Farmer who)
+
+            private static void Ring_OnUnequip_Postfix(Ring __instance, Farmer who)
         {
             GameLocation location;
             location = who.currentLocation;
 
-            if (__instance.Name.Equals("ApryllForever.MutantRings_DarkPhoenixRing"))
+            if (__instance.Name.Equals("Dark Phoenix Ring"))
             {
                 if (location.sharedLights.ContainsKey(fuckitall))
                 {
@@ -142,12 +216,24 @@ namespace MutantRings
                 }
             }
 
+            if (__instance.Name.Equals("Goblin Queen Ring"))
+            {
+                if (location.sharedLights.ContainsKey(fuckme))
+                {
+                    who.currentLocation.removeLightSource(fuckme);
+
+                }
+            }
+
         }
 
 
-            private static void Farmer_takeDamage_Postfix(Farmer __instance, int damage, bool overrideParry, Monster damager)
+        private static void Farmer_takeDamage_Postfix(Farmer __instance, int damage, bool overrideParry, Monster damager)
         {
-        if(Game1.player.isWearingRing("ApryllForever.MutantRings_DarkPhoenixRing"))
+            GameLocation location = new GameLocation();
+            location = Game1.player.currentLocation;
+
+            if (Game1.player.isWearingRing("ApryllForever.MutantRings_DarkPhoenixRing"))
             {
                 if (__instance.health <= 0 && !hasUsedDarkPhoenixRevive.Value)
                 {
@@ -155,8 +241,8 @@ namespace MutantRings
                     DelayedAction.functionAfterDelay(delegate
                     {
                         Game1.player.stopGlowing();
-                    }, 500);
-                    Game1.playSound("yoba");
+                    }, 1500);
+                    Game1.playSound("ApryllForever.MutantRings_DarkPhoenix");
                     for (int i = 0; i < 13; i++)
                     {
                         float xPos;
@@ -181,25 +267,101 @@ namespace MutantRings
                     });
                     __instance.health = __instance.maxHealth;
                     hasUsedDarkPhoenixRevive.Value = true;
+                    location?.explode(Game1.player.Tile, 3, Game1.player, damageFarmers: false, 99);
                 }
+            }
+
+                if (Game1.player.isWearingRing("ApryllForever.MutantRings_MadelyneRing"))
+                {
+                    if (__instance.health <= 0 && !hasUsedMadelyneRevive.Value)
+                    {
+                        Game1.player.startGlowing(new Color(255, 255, 0), border: false, 0.25f);
+                        DelayedAction.functionAfterDelay(delegate
+                        {
+                            Game1.player.stopGlowing();
+                        }, 1500);
+                        Game1.playSound("ApryllForever.MutantRings_GoblinQueen");
+                        for (int i = 0; i < 13; i++)
+                        {
+                            float xPos;
+                            xPos = Game1.random.Next(-32, 33);
+                            Game1.player.currentLocation.temporarySprites.Add(new TemporaryAnimatedSprite("LooseSprites\\Cursors2", new Microsoft.Xna.Framework.Rectangle(114, 46, 2, 2), 200f, 5, 1, new Vector2(xPos + 32f, -96f), flicker: false, flipped: false, 1f, 0f, Color.White, 4f, 0f, 0f, 0f)
+                            {
+                                attachedCharacter = __instance,
+                                positionFollowsAttachedCharacter = true,
+                                motion = new Vector2(xPos / 32f, -3f),
+                                delayBeforeAnimationStart = i * 50,
+                                alphaFade = 0.001f,
+                                acceleration = new Vector2(0f, 0.1f)
+                            });
+                        }
+                        Game1.player.currentLocation.temporarySprites.Add(new TemporaryAnimatedSprite("LooseSprites\\Cursors2", new Microsoft.Xna.Framework.Rectangle(157, 280, 28, 19), 2000f, 1, 1, new Vector2(-20f, -16f), flicker: false, flipped: false, 1E-06f, 0f, Color.White, 4f, 0f, 0f, 0f)
+                        {
+                            attachedCharacter = __instance,
+                            positionFollowsAttachedCharacter = true,
+                            alpha = 0.1f,
+                            alphaFade = -0.01f,
+                            alphaFadeFade = -0.00025f
+                        });
+                        __instance.health = __instance.maxHealth;
+                        hasUsedMadelyneRevive.Value = true;
+                        location?.explode(Game1.player.Tile, 4, Game1.player, damageFarmers: false, 999);
+                    }
 
 
+                }
+                Random rnd = new Random();
+                int heal = rnd.Next(3,13);
 
+                if (Game1.player.isWearingRing("ApryllForever.MutantRings_MystiqueRing"))
+                { 
+                    if(MystiqueHeal==false)
+                Game1.player.health = Math.Min(Game1.player.maxHealth, Game1.player.health + heal);
+                }
+                MystiqueHeal = true;
+            if (Game1.player.isWearingRing("ApryllForever.MutantRings_ShadowCatRing"))
+            {
+                Game1.player.temporarilyInvincible = true;
+                Game1.player.flashDuringThisTemporaryInvincibility = true;
+                Game1.player.temporaryInvincibilityTimer = 0;
+                Game1.player.currentTemporaryInvincibilityDuration = 4000;
+
+            }
+
+            if (Game1.player.isWearingRing("ApryllForever.MutantRings_StormRing"))
+            {
+               // Vector2 randomTile = new Vector2();
+                //Random random = new Random();
+               // int randox = random.Next(-7,7);
+               // int randoy = random.Next(-7, 7);
+                //randomTile = Game1.player.Position;
+                //randomTile.X = randomTile.X + (float)randox;
+                //randomTile.Y += (float)(randoy);
+
+                //Vector2 rawrTile =  new Vector2();
+               // rawrTile = Game1.player.Position;
+                //rawrTile.X = Game1.player.Position.X +2;
+                //rawrTile.Y = Game1.player.Position.Y +2;
+
+                if (StormStrike == false)
+                {
+
+                    location?.explode(Game1.player.Tile, 4, Game1.player, damageFarmers: false, 19);
+                    Utility.drawLightningBolt(Game1.player.Position, Game1.player.currentLocation);
+                    Game1.playSound("thunder");
+                    StormStrike = true;
+                }
+            }
 
 
 
             }
-        if(Game1.player.isWearingRing("ApryllForever.MutantRings_MystiqueRing"))
-            { }
         
-        
-        }
-
         private static void Ring_Update_Postfix(GameTime time, GameLocation environment, Farmer who, Ring __instance)
         {
            
             
-            if (who.isWearingRing("ApryllForever.MutantRings_DarkPhoenixRing"))
+            if (__instance.Name.Equals("Dark Phoenix Ring"))
             {
                 Vector2 offset;
                 offset = Vector2.Zero;
@@ -210,28 +372,158 @@ namespace MutantRings
 
                 int goat = __instance.uniqueID + (int)who.UniqueMultiplayerID;
 
-                environment.repositionLightSource(goat, new Vector2(who.Position.X + 21f, who.Position.Y) + offset);
+                environment.repositionLightSource(fuckitall, new Vector2(who.Position.X + 21f, who.Position.Y) + offset);
                 if (!environment.isOutdoors && !(environment is MineShaft) && !(environment is VolcanoDungeon))
                 {
                     LightSource i;
-                    i = environment.getLightSource(goat);
+                    i = environment.getLightSource(fuckitall);
                     if (i != null)
                     {
                         i.radius.Value = 3f;
                     }
                 }
-
-
-
             }
 
 
+            if (__instance.Name.Equals("Goblin Queen Ring"))
+            {
+                Vector2 offset;
+                offset = Vector2.Zero;
+                if (who.shouldShadowBeOffset)
+                {
+                    offset += who.drawOffset;
+                }
+
+                //int goat = __instance.uniqueID + (int)who.UniqueMultiplayerID;
+
+                environment.repositionLightSource(fuckme, new Vector2(who.Position.X + 21f, who.Position.Y) + offset);
+                if (!environment.isOutdoors && !(environment is MineShaft) && !(environment is VolcanoDungeon))
+                {
+                    LightSource i;
+                    i = environment.getLightSource(fuckme);
+                    if (i != null)
+                    {
+                        i.radius.Value = 3f;
+                    }
+                }
+            }
+
+            
+        }
+        
+
+        private static void Ring_onNewLocation_Postfix(Farmer who, GameLocation environment,Ring __instance)
+        {
+            if (__instance.Name.Equals("Dark Phoenix Ring"))
+            {
+                environment.removeLightSource(fuckitall);
+
+                environment.sharedLights[fuckitall] = new LightSource(1, new Vector2(who.Position.X + 21f, who.Position.Y + 64f), 10f, new Color(0, 170, 0), LightSource.LightContext.None, who.UniqueMultiplayerID);
+            }
+
+            if (__instance.Name.Equals("Goblin Queen Ring"))
+            {
+                environment.removeLightSource(fuckme);
+
+                environment.sharedLights[fuckme] = new LightSource(1, new Vector2(who.Position.X + 21f, who.Position.Y + 64f), 10f, new Color(124, 170, 0), LightSource.LightContext.None, who.UniqueMultiplayerID);
+            }
+
+        }
+
+        private static void Ring_onLeaveLocation_Postfix(Farmer who, GameLocation environment, Ring __instance)
+        {
+
+
+
         }
 
 
+        private static void Ring_onMonsterSlay_Postfix(Monster monster, GameLocation location, Farmer who)
+        {
+
+            if (Game1.player.isWearingRing("ApryllForever.MutantRings_RogueRing") && DataLoader.Monsters(Game1.content).TryGetValue(monster.Name, out var result))
+            {
+                IList<string> objects;
+                objects = monster.objectsToDrop;
+                string[] objectsSplit;
+                objectsSplit = ArgUtility.SplitBySpace(result.Split('/')[6]);
+                for (int l = 0; l < objectsSplit.Length; l += 2)
+                {
+                    if (Game1.random.NextDouble() < Convert.ToDouble(objectsSplit[l + 1]))
+                    {
+                        objects.Add(objectsSplit[l]);
+                    }
+                }
+                who.health = Math.Min(who.maxHealth, who.health + 10);
+                who.Stamina = Math.Min(who.MaxStamina, who.Stamina + 12);
+
+            }
+
+        }
+
+        private static void Ring_AddEquipmentEffects_Postfix(BuffEffects effects,Ring __instance)
+        {
+            if (__instance.Name.Equals("Dark Phoenix Ring"))
+            {
+                effects.AttackMultiplier.Value += 0.4f;
+                effects.KnockbackMultiplier.Value += 0.2f;
+            }
+
+                if (__instance.Name.Equals("Rogue Ring"))
+            {
+                effects.AttackMultiplier.Value += 0.2f;
+                effects.Defense.Value += 2;
+                effects.Immunity.Value += 2;
+
+            }
+
+            if (__instance.Name.Equals("Mystique Ring"))
+            {
+                effects.AttackMultiplier.Value += 0.3f;
+                effects.LuckLevel.Value += 3;
+                effects.Speed.Value += 3;
+                //effects.WeaponSpeedMultiplier.Value -= 6;
+
+            }
+            if (__instance.Name.Equals("Goblin Queen Ring"))
+            {
+                effects.AttackMultiplier.Value += 0.7f;
+                effects.CriticalChanceMultiplier.Value += 2;
+            }
+            if (__instance.Name.Equals("White Queen Ring"))
+            {
+                effects.AttackMultiplier.Value += 0.1f;
+                effects.Defense.Value += 7;
+                effects.Immunity.Value += 7;
+                effects.CriticalChanceMultiplier.Value += 2;
+
+            }
+
+            if (__instance.Name.Equals("Shadow Cat Ring"))
+            {
+                effects.CriticalChanceMultiplier.Value += 1;
+                effects.AttackMultiplier.Value += 0.1f;
+                effects.KnockbackMultiplier.Value += 0.1f;
+            }
+            if (__instance.Name.Equals("Wolverine Ring"))
+            {
+                effects.AttackMultiplier.Value += 0.6f;
+                effects.Defense.Value += 2;
+                effects.Immunity.Value += 2;
+            }
+
+            if (__instance.Name.Equals("Magneto Ring"))
+            {
+                effects.AttackMultiplier.Value += 0.3f;
+                effects.MagneticRadius.Value += 1024;
+                effects.KnockbackMultiplier.Value += 0.3f;
+            }
+
+
 
 
         }
+    }
     }
 
 
