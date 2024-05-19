@@ -40,6 +40,7 @@ namespace MutantRings
         private static int fuckme;
         public static bool MystiqueHeal;
         public static bool StormStrike;
+        public static bool JubileeFirework;
 
         // private static readonly AccessTools.FieldRef<Ring, int?> lightSourceField = AccessTools.FieldRefAccess<Ring, int?>("_lightSourceID");
 
@@ -117,6 +118,7 @@ namespace MutantRings
           if(e.IsMultipleOf(4))
             {
                 StormStrike = false;
+                JubileeFirework = false;
             }
             if (e.IsMultipleOf(20))
             {
@@ -133,6 +135,7 @@ namespace MutantRings
 
                 }
             }
+            
 
         }
 
@@ -172,7 +175,7 @@ namespace MutantRings
 
                 location.sharedLights[jewel] = new LightSource(1, new Vector2(who.Position.X + 21f, who.Position.Y + 64f), 5f, new Color(0, 170, 0), (int)__instance.uniqueID + (int)who.UniqueMultiplayerID, LightSource.LightContext.None, who.UniqueMultiplayerID);
 
-                fuckitall = jewel;
+                fuckitall = jewel; //Otpusti, y zabud, novi den u kazhi put!!!!
              
                 
 
@@ -346,12 +349,82 @@ namespace MutantRings
                 if (StormStrike == false)
                 {
 
-                    location?.explode(Game1.player.Tile, 4, Game1.player, damageFarmers: false, 19);
+                    location?.explode(Game1.player.Tile, 7, Game1.player, damageFarmers: false, 23,false);
                     Utility.drawLightningBolt(Game1.player.Position, Game1.player.currentLocation);
                     Game1.playSound("thunder");
                     StormStrike = true;
                 }
             }
+
+
+            if(Game1.player.isWearingRing("ApryllForever.MutantRings_JubileeRing"))
+            {
+                if (JubileeFirework == false)
+                {
+                   // Game1.player.currentLocation.explode(Game1.player.Tile, 4, Game1.player, false, 17, false);
+                    //location?.explode(Game1.player.Position, 7, Game1.player, false, 17, false);
+                    {
+                        Random random = new Random();
+                        int fireworkType;
+                        fireworkType = 1; //random.Next(0,3);
+                        int spriteX;
+                        spriteX = 256 + fireworkType * 16;
+
+                        int idNum;
+                        idNum = Game1.random.Next();
+                        int idNumFirework;
+                        idNumFirework = Game1.random.Next();
+                        location.playSound("thudStep");
+
+                        /*
+                        Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors_1_6", new Microsoft.Xna.Framework.Rectangle(spriteX, 397, 16, 16), 2400f, 1, 1, __instance.Tile * 64f, flicker: false, flipped: false, -1f, 0f, Color.White, 4f, 0f, 0f, 0f)
+                        {
+                            shakeIntensity = 0.5f,
+                            shakeIntensityChange = 0.002f,
+                            extraInfoForEndBehavior = idNum,
+                            endFunction = location.removeTemporarySpritesWithID,
+                            layerDepth = (__instance.Tile.Y * 64f + 64f - 16f) / 10000f
+                        });*/
+                        Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors_1_6", new Microsoft.Xna.Framework.Rectangle(0, 432, 16, 16), 8f, 1, 0, __instance.Tile * 64f, flicker: false, flipped: false, -1f, 0f, Color.White, 4f, 0f, 0f, 0f)
+                        {
+                            fireworkType = fireworkType,
+                            delayBeforeAnimationStart = 1,
+                            acceleration = new Vector2(0f, -0.36f + (float)Game1.random.Next(2) / 100f),
+                            drawAboveAlwaysFront = true,
+                            startSound = "firework",
+                            shakeIntensity = 0.5f,
+                            shakeIntensityChange = 0.002f,
+                            extraInfoForEndBehavior = idNumFirework,
+                            endFunction = location.removeTemporarySpritesWithID,
+                            id = Game1.random.Next(20, 31),
+                            Parent = location,
+                            bombDamage = 17,
+                            bombRadius = 4,
+                            owner = Game1.player
+
+                        });
+                        Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Microsoft.Xna.Framework.Rectangle(598, 1279, 3, 4), 40f, 5, 5, __instance.Tile * 64f + new Vector2(11f, 12f) * 4f, flicker: true, flipped: false, (float)(Game1.player.Tile.Y + 7) / 10000f, 0f, Color.Yellow, 4f, 0f, 0f, 0f)
+                        {
+                            id = idNum
+                        });
+                        Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Microsoft.Xna.Framework.Rectangle(598, 1279, 3, 4), 40f, 5, 5, __instance.Tile * 64f + new Vector2(11f, 12f) * 4f, flicker: true, flipped: true, (float)(Game1.player.Tile.Y + 7) / 10000f, 0f, Color.Orange, 4f, 0f, 0f, 0f)
+                        {
+                            delayBeforeAnimationStart = 50,
+                            id = idNum
+                        });
+                        Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Microsoft.Xna.Framework.Rectangle(598, 1279, 3, 4), 40f, 5, 5, __instance.Tile * 64f + new Vector2(11f, 12f) * 4f, flicker: true, flipped: false, (float)(Game1.player.Tile.Y + 7) / 10000f, 0f, Color.White, 3f, 0f, 0f, 0f)
+                        {
+                            delayBeforeAnimationStart = 100,
+                            id = idNum
+                        });
+                        JubileeFirework = true;
+
+                    }
+                }
+             
+
+            }
+
 
 
 
@@ -505,6 +578,13 @@ namespace MutantRings
                 effects.AttackMultiplier.Value += 0.1f;
                 effects.KnockbackMultiplier.Value += 0.1f;
             }
+
+            if (__instance.Name.Equals("Jubilee Ring"))
+            {
+                effects.Defense.Value += 1;
+                effects.KnockbackMultiplier.Value += 0.1f;
+            }
+
             if (__instance.Name.Equals("Wolverine Ring"))
             {
                 effects.AttackMultiplier.Value += 0.6f;
