@@ -531,6 +531,64 @@ namespace MutantRings
                 who.Stamina = Math.Min(who.MaxStamina, who.Stamina + 12);
 
             }
+            if (Game1.player.isWearingRing("ApryllForever.MutantRings_EmmaRing"))
+            {
+                 Item item = ItemRegistry.Create("72");
+                if (Game1.random.NextDouble() < 0.2)
+                {
+                    Game1.createItemDebris(item, Game1.player.getStandingPosition(), 1);
+                }
+                //location.debris.Add(new Debris(ItemRegistry.Create("(O)72"), monster.Position * 64f + new Vector2(32f, 32f)));
+            }
+
+            if (Game1.player.isWearingRing("ApryllForever.MutantRings_MagnetoRing"))
+            {
+                Item ironore = ItemRegistry.Create("380");
+                Item ironbar = ItemRegistry.Create("335");
+                Item copperore = ItemRegistry.Create("378");
+                Item copperbar = ItemRegistry.Create("334");
+                Item goldore = ItemRegistry.Create("384");
+                Item goldbar = ItemRegistry.Create("336");
+                Item iridiumore = ItemRegistry.Create("386");
+                Item iridiumbar = ItemRegistry.Create("337");
+
+                if (monster.Name.Equals("Dwarvish Sentry"))
+                {
+                    Game1.createItemDebris(ironbar, Game1.player.getStandingPosition(), 1);
+                }
+
+                if (monster.Name.Equals("Armored Bug") || monster.Name.Equals("Metal Head") || monster.Name.Equals("Iron Slime") || monster.Name.Equals("Shadow Sniper")) 
+                {
+                    Game1.createItemDebris(ironore, Game1.player.getStandingPosition(), 1);
+                }
+
+                if (monster.Name.Equals("Skeleton") || monster.Name.Equals("Copper Slime") || monster.Name.Equals("Rock Crab") || monster.Name.Equals("Skeleton Mage") || monster.Name.Equals("Skeleton Mage"))
+                {
+                    Game1.createItemDebris(copperore, Game1.player.getStandingPosition(), 1);
+                }
+
+                if (monster.Name.Equals("Hot Head") || monster.Name.Equals("Lava Lurk") || monster.Name.Equals("Lava Crab"))
+                {
+                    Game1.createItemDebris(goldore, Game1.player.getStandingPosition(), 1);
+                }
+
+
+
+
+                if (monster.Name.Equals("Iridium Golem") || monster.Name.Equals("Iridium Bat"))
+                {
+                    if (Game1.random.NextDouble() <= 0.5)
+                    {
+                        Game1.createItemDebris(iridiumore, Game1.player.getStandingPosition(), 1);
+                    }
+                    else
+                    {
+
+                    }
+                }
+
+                //Lava Crab
+            }
 
         }
 
@@ -540,11 +598,13 @@ namespace MutantRings
             {
                 effects.AttackMultiplier.Value += 0.4f;
                 effects.KnockbackMultiplier.Value += 0.2f;
+                effects.Defense.Value += 2;
+                effects.Immunity.Value += 2;
             }
 
                 if (__instance.Name.Equals("Rogue Ring"))
             {
-                effects.AttackMultiplier.Value += 0.2f;
+                effects.AttackMultiplier.Value += 0.6f;
                 effects.Defense.Value += 2;
                 effects.Immunity.Value += 2;
 
@@ -552,7 +612,7 @@ namespace MutantRings
 
             if (__instance.Name.Equals("Mystique Ring"))
             {
-                effects.AttackMultiplier.Value += 0.3f;
+                effects.AttackMultiplier.Value += 0.6f;
                 effects.LuckLevel.Value += 3;
                 effects.Speed.Value += 3;
                 //effects.WeaponSpeedMultiplier.Value -= 6;
@@ -565,7 +625,7 @@ namespace MutantRings
             }
             if (__instance.Name.Equals("White Queen Ring"))
             {
-                effects.AttackMultiplier.Value += 0.1f;
+                effects.AttackMultiplier.Value += 0.2f;
                 effects.Defense.Value += 7;
                 effects.Immunity.Value += 7;
                 effects.CriticalChanceMultiplier.Value += 2;
@@ -588,7 +648,7 @@ namespace MutantRings
             if (__instance.Name.Equals("Wolverine Ring"))
             {
                 effects.AttackMultiplier.Value += 0.6f;
-                effects.Defense.Value += 2;
+                effects.Defense.Value += 4;
                 effects.Immunity.Value += 2;
             }
 
