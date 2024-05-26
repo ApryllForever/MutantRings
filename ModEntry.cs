@@ -41,6 +41,8 @@ namespace MutantRings
         public static bool MystiqueHeal;
         public static bool StormStrike;
         public static bool JubileeFirework;
+        public static bool Magnetobomb;
+        public static bool DazzlerFlash;
 
         // private static readonly AccessTools.FieldRef<Ring, int?> lightSourceField = AccessTools.FieldRefAccess<Ring, int?>("_lightSourceID");
 
@@ -119,6 +121,8 @@ namespace MutantRings
             {
                 StormStrike = false;
                 JubileeFirework = false;
+                Magnetobomb = false;
+                DazzlerFlash = false;
             }
             if (e.IsMultipleOf(20))
             {
@@ -135,6 +139,7 @@ namespace MutantRings
 
                 }
             }
+          
             
 
         }
@@ -361,7 +366,13 @@ namespace MutantRings
             {
                 if (JubileeFirework == false)
                 {
-                   // Game1.player.currentLocation.explode(Game1.player.Tile, 4, Game1.player, false, 17, false);
+
+
+                   //Utility.addRainbowStarExplosion(location, Game1.player.getStandingPosition(),125 );// Game1.random.Next(6, 9));
+
+
+
+                    // Game1.player.currentLocation.explode(Game1.player.Tile, 4, Game1.player, false, 17, false);
                     //location?.explode(Game1.player.Position, 7, Game1.player, false, 17, false);
                     {
                         Random random = new Random();
@@ -385,6 +396,7 @@ namespace MutantRings
                             endFunction = location.removeTemporarySpritesWithID,
                             layerDepth = (__instance.Tile.Y * 64f + 64f - 16f) / 10000f
                         });*/
+
                         Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors_1_6", new Microsoft.Xna.Framework.Rectangle(0, 432, 16, 16), 8f, 1, 0, __instance.Tile * 64f, flicker: false, flipped: false, -1f, 0f, Color.White, 4f, 0f, 0f, 0f)
                         {
                             fireworkType = fireworkType,
@@ -417,14 +429,44 @@ namespace MutantRings
                             delayBeforeAnimationStart = 100,
                             id = idNum
                         });
+                    
+
                         JubileeFirework = true;
 
                     }
                 }
-             
 
             }
 
+            if (Game1.player.isWearingRing("ApryllForever.MutantRings_DazzlerRing"))
+            {
+                if (DazzlerFlash == false)
+                {
+                    Utility.addRainbowStarExplosion(location, Game1.player.getStandingPosition(), 256);// Game1.random.Next(6, 9));
+
+                    DazzlerFlash = true;
+                }
+            }
+
+
+
+            if (Game1.player.isWearingRing("ApryllForever.MutantRings_MagnetoRing"))
+            {
+                if (Magnetobomb = false)
+                {
+                    int idNum;
+                    idNum = Game1.random.Next();
+                    Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite(353, 100f, 1, 2400, Game1.player.getStandingPosition() * 64f, flicker: true, flipped: false, location, Game1.player)
+                    {
+                        shakeIntensity = 5f,
+                        shakeIntensityChange = 0.2f,
+                        extraInfoForEndBehavior = idNum,
+                        endFunction = location.removeTemporarySpritesWithID
+                    });
+                    location?.explode(Game1.player.Tile, 7, Game1.player, damageFarmers: false, 33, false);
+                    Magnetobomb = true;
+                }
+            }
 
 
 
@@ -513,6 +555,13 @@ namespace MutantRings
 
         private static void Ring_onMonsterSlay_Postfix(Monster monster, GameLocation location, Farmer who)
         {
+          
+
+            if (Game1.player.isWearingRing("ApryllForever.MutantRings_DarkPhoenixRing") || Game1.player.isWearingRing("ApryllForever.MutantRings_MadelyneRing"))
+            {
+                location?.explode(monster.Tile, 2, who, damageFarmers: false, -1, !(location is Farm) && !(location is SlimeHutch) && !(location is FarmHouse));
+
+            }
 
             if (Game1.player.isWearingRing("ApryllForever.MutantRings_RogueRing") && DataLoader.Monsters(Game1.content).TryGetValue(monster.Name, out var result))
             {
@@ -557,12 +606,12 @@ namespace MutantRings
                     Game1.createItemDebris(ironbar, Game1.player.getStandingPosition(), 1);
                 }
 
-                if (monster.Name.Equals("Armored Bug") || monster.Name.Equals("Metal Head") || monster.Name.Equals("Iron Slime") || monster.Name.Equals("Shadow Sniper")) 
+                if (monster.Name.Equals("Armored Bug") || monster.Name.Equals("Metal Head") || monster.Name.Equals("Iron Slime") || monster.Name.Equals("Shadow Sniper") || monster.Name.Equals("Carbon Ghost")) 
                 {
                     Game1.createItemDebris(ironore, Game1.player.getStandingPosition(), 1);
                 }
 
-                if (monster.Name.Equals("Skeleton") || monster.Name.Equals("Copper Slime") || monster.Name.Equals("Rock Crab") || monster.Name.Equals("Skeleton Mage") || monster.Name.Equals("Skeleton Mage"))
+                if (monster.Name.Equals("Skeleton") || monster.Name.Equals("Copper Slime") || monster.Name.Equals("Rock Crab") || monster.Name.Equals("Skeleton Mage") )
                 {
                     Game1.createItemDebris(copperore, Game1.player.getStandingPosition(), 1);
                 }
@@ -583,11 +632,10 @@ namespace MutantRings
                     }
                     else
                     {
-
+                        Game1.createItemDebris(goldore, Game1.player.getStandingPosition(), 1);
                     }
                 }
 
-                //Lava Crab
             }
 
         }
