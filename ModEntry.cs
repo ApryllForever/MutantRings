@@ -17,6 +17,11 @@ using StardewValley.Locations;
 using System.Threading;
 using System.Xml.Linq;
 using StardewValley.Buffs;
+using Microsoft.Xna.Framework.Graphics;
+using StardewValley.Projectiles;
+using xTile.Dimensions;
+using StardewValley.Tools;
+using xTile.Tiles;
 
 
 
@@ -36,6 +41,16 @@ namespace MutantRings
         [XmlIgnore]
         public static NetBool hasUsedMadelyneRevive = new NetBool(value: false);
 
+        public const float steamZoom = 4f;
+        public const float steamYMotionPerMillisecond = 0.1f;
+        private Texture2D steamAnimation;
+        private Vector2 steamPosition;
+        private float steamYOffset;
+
+
+        private static Microsoft.Xna.Framework.Rectangle chaosSource = new Microsoft.Xna.Framework.Rectangle(640, 0, 64, 64);
+        public static Vector2 chaosPos;
+
         private static int fuckitall;
         private static int fuckme;
         public static bool MystiqueHeal;
@@ -43,6 +58,8 @@ namespace MutantRings
         public static bool JubileeFirework;
         public static bool Magnetobomb;
         public static bool DazzlerFlash;
+        public static bool MagmaBlast;
+        public static bool ScarletChaos;
 
         // private static readonly AccessTools.FieldRef<Ring, int?> lightSourceField = AccessTools.FieldRefAccess<Ring, int?>("_lightSourceID");
 
@@ -108,6 +125,11 @@ namespace MutantRings
             );
 
 
+            harmony.Patch(
+            original: AccessTools.Method(typeof(GameLocation), nameof(GameLocation.drawAboveAlwaysFrontLayer)),
+            postfix: new HarmonyMethod(typeof(ModEntry), nameof(ModEntry.GameLocation_drawAboveAlwaysFrontLayer_Postfix))
+            );
+
         }
 
         private void GameLoop_OneSecondUpdateTicked(object? sender, StardewModdingAPI.Events.OneSecondUpdateTickedEventArgs e)
@@ -123,6 +145,7 @@ namespace MutantRings
                 JubileeFirework = false;
                 Magnetobomb = false;
                 DazzlerFlash = false;
+                MagmaBlast = false;
             }
             if (e.IsMultipleOf(20))
             {
@@ -139,9 +162,123 @@ namespace MutantRings
 
                 }
             }
-          
-            
+            if (e.IsMultipleOf(12))
+            {
+                if (Game1.player.isWearingRing("ApryllForever.MutantRings_WandaRing"))
+                {
+                    if (!Game1.shouldTimePass())
+                    {
+                        return;
+                    }
 
+                    {
+                        GameLocation location = Game1.player.currentLocation;
+                        if (location is SlimeHutch || location is FarmHouse)
+                        {
+                            return;
+                        }
+                        Monster closest_monster;
+                        closest_monster = Utility.findClosestMonsterWithinRange(location, Game1.player.getStandingPosition(), 500, ignoreUntargetables: true);
+                        if (closest_monster != null && !closest_monster.Name.Equals("Truffle Crab"))
+                        {
+                            Vector2 motion;
+                            motion = Utility.getVelocityTowardPoint(Game1.player.getStandingPosition(), closest_monster.getStandingPosition(), 2f);
+                            float projectile_rotation;
+                            projectile_rotation = (float)Math.Atan2(motion.Y, motion.X) + (float)Math.PI / 2f;
+                            BasicProjectile p;
+                            p = new BasicProjectile((Game1.random.Next(13, 37)*3 ), 2, 3, 3, 7f, motion.X, motion.Y, Game1.player.getStandingPosition() - new Vector2(32f, 48f), null, null, null, explode: true, damagesMonsters: true, location, Game1.player);
+                            p.IgnoreLocationCollision = true;
+                            p.ignoreObjectCollisions.Value = true;
+                            p.acceleration.Value = motion;
+                            p.maxVelocity.Value = 20f;
+                            //p.projectileID.Value = 1;
+                            p.startingRotation.Value = projectile_rotation;
+                            p.alpha.Value = 0.001f;
+                            p.alphaChange.Value = 0.05f;
+                            p.light.Value = true;
+                            //p.collisionSound.Value = "crit";
+                            location.projectiles.Add(p);
+                            location.playSound("flameSpell");
+                        }
+                    }
+                }
+
+
+            }
+
+            if (e.IsMultipleOf(9))
+            {
+                if (Game1.player.isWearingRing("ApryllForever.MutantRings_StormRing"))
+                {
+                    if (!Game1.shouldTimePass())
+                    {
+                        return;
+                    }
+
+                    {
+                        GameLocation location = Game1.player.currentLocation;
+                        if (location is SlimeHutch || location is FarmHouse)
+                        {
+                            return;
+                        }
+
+                        Monster closest_monster;
+                        closest_monster = Utility.findClosestMonsterWithinRange(location, Game1.player.getStandingPosition(), 300, ignoreUntargetables: true);
+                        if (closest_monster != null && !closest_monster.Name.Equals("Truffle Crab"))
+                        {
+                            bool attacked = location.damageMonster(
+                            areaOfEffect: closest_monster.GetBoundingBox(),
+                            minDamage: 13 * 1,
+                            maxDamage: 37 * 1,
+                            knockBackModifier: 1,
+                            addedPrecision: 1,
+                            critChance: 0,
+                            critMultiplier: 0,
+                            isBomb: false,
+                            triggerMonsterInvincibleTimer: true,
+                            who: Game1.player
+                                        );
+                            Utility.drawLightningBolt(closest_monster.Position, Game1.player.currentLocation);
+                            Game1.playSound("thunder");
+
+                        }
+                       
+
+                        /*
+                        Monster closest_monster;
+                        closest_monster = Utility.findClosestMonsterWithinRange(location, Game1.player.getStandingPosition(), 500, ignoreUntargetables: true);
+                        if (closest_monster != null && !closest_monster.Name.Equals("Truffle Crab"))
+                        {
+                            {
+                                Vector2 motion;
+                                motion = Utility.getVelocityTowardPoint(Game1.player.getStandingPosition(), closest_monster.getStandingPosition(), 2f);
+                                float projectile_rotation;
+                                projectile_rotation = (float)Math.Atan2(motion.Y, motion.X) + (float)Math.PI / 2f;
+                                BasicProjectile p;
+                                p = new BasicProjectile(Game1.random.Next(13, 37), 99, 3, 3, 7f, motion.X, motion.Y, Game1.player.getStandingPosition() - new Vector2(32f, 48f), null, null, null, explode: true, damagesMonsters: true, location, Game1.player);
+                                p.IgnoreLocationCollision = true;
+                                p.ignoreObjectCollisions.Value = true;
+                                p.acceleration.Value = motion;
+                                p.maxVelocity.Value = 99f;
+                                //p.projectileID.Value = 1;
+                                p.startingRotation.Value = projectile_rotation;
+                                p.alpha.Value = 0.001f;
+                                p.alphaChange.Value = 0.05f;
+                                p.light.Value = true;
+                                // p.collisionSound.Value = "crit";
+                                location.projectiles.Add(p);
+                                // location.playSound("flameSpell");
+                            }
+
+                            //location?.explode(Game1.player.Tile, 7, Game1.player, damageFarmers: false, 23, false);
+                            Utility.drawLightningBolt(closest_monster.Position, Game1.player.currentLocation);
+                            Game1.playSound("thunder");
+
+                        }
+                            */
+                    }
+                }
+            }
         }
 
         private static void Monster_focusedOnFarmer_Postfix(Monster __instance, ref bool __result)
@@ -151,7 +288,6 @@ namespace MutantRings
                 __result = __instance.netFocusedOnFarmers.Value = false;
                // return false;
             }
-
            // return true;
         } 
         
@@ -353,10 +489,70 @@ namespace MutantRings
 
                 if (StormStrike == false)
                 {
+                    Monster closest_monster;
+                    closest_monster = Utility.findClosestMonsterWithinRange(location, Game1.player.getStandingPosition(), 300, ignoreUntargetables: true);
 
-                    location?.explode(Game1.player.Tile, 7, Game1.player, damageFarmers: false, 23,false);
-                    Utility.drawLightningBolt(Game1.player.Position, Game1.player.currentLocation);
-                    Game1.playSound("thunder");
+                    if (closest_monster != null && !closest_monster.Name.Equals("Truffle Crab"))
+                    {
+                         location.damageMonster(
+                    areaOfEffect: closest_monster.GetBoundingBox(),
+                    minDamage: 13 * 2,
+                    maxDamage: 37 * 2,
+                    knockBackModifier: 1,
+                    addedPrecision: 1,
+                    critChance: 0,
+                    critMultiplier: 0,
+                    isBomb: false,
+                    triggerMonsterInvincibleTimer: true,
+                    who: Game1.player
+                                );
+                        Utility.drawLightningBolt(closest_monster.Position, Game1.player.currentLocation);
+                        Game1.playSound("thunder");
+                    }
+                    /*
+                                        Monster closest_monster;
+                                        closest_monster = Utility.findClosestMonsterWithinRange(location, Game1.player.getStandingPosition(), 300, ignoreUntargetables: true);
+                                        if (closest_monster != null && !closest_monster.Name.Equals("Truffle Crab"))
+                                        {
+
+                                        */
+                    /*
+                    {
+                        Vector2 motion;
+                        motion = Utility.getVelocityTowardPoint(Game1.player.getStandingPosition(), closest_monster.getStandingPosition(), 2f);
+                        float projectile_rotation;
+                        projectile_rotation = (float)Math.Atan2(motion.Y, motion.X) + (float)Math.PI / 2f;
+                        BasicProjectile p;
+                        p = new BasicProjectile(Game1.random.Next(13, 37), 99, 3, 3, 7f, motion.X, motion.Y, Game1.player.getStandingPosition() - new Vector2(32f, 48f), null, null, null, explode: true, damagesMonsters: true, location, Game1.player);
+                        p.IgnoreLocationCollision = true;
+                        p.ignoreObjectCollisions.Value = true;
+                        p.acceleration.Value = motion;
+                        p.maxVelocity.Value = 99f;
+                        //p.projectileID.Value = 1;
+                        p.startingRotation.Value = projectile_rotation;
+                        p.alpha.Value = 0.001f;
+                        p.alphaChange.Value = 0.05f;
+                        p.light.Value = true;
+                        // p.collisionSound.Value = "crit";
+                        location.projectiles.Add(p);
+                        // location.playSound("flameSpell");
+                    }
+                    */
+
+                    /*
+                        closest_monster.takeDamage(18,0,0,true,0,Game1.player);
+
+                        //location?.explode(Game1.player.Tile, 7, Game1.player, damageFarmers: false, 23, false);
+                        Utility.drawLightningBolt(closest_monster.Position, Game1.player.currentLocation);
+                        Game1.playSound("thunder");
+                    }
+                    */
+
+
+                    //location?.explode(Game1.player.Tile, 7, Game1.player, damageFarmers: false, 23,false);
+                    /// Utility.drawLightningBolt(Game1.player.Position, Game1.player.currentLocation);
+                    /// Game1.playSound("thunder");
+
                     StormStrike = true;
                 }
             }
@@ -448,6 +644,82 @@ namespace MutantRings
                 }
             }
 
+            if (Game1.player.isWearingRing("ApryllForever.MutantRings_AmaraRing"))
+            {
+                if (MagmaBlast == false)
+                {
+
+                    Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Microsoft.Xna.Framework.Rectangle(276, 1985, 12, 11), Game1.player.getStandingPosition() + new Vector2(-48f, -48f), flipped: false, 0f, Color.White)
+                    {
+                        interval = 3000f,
+                        totalNumberOfLoops = 99999,
+                        animationLength = 4,
+                        scale = 4f,
+                        alphaFade = 0.01f
+                    });
+                    Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Microsoft.Xna.Framework.Rectangle(276, 1985, 12, 11), Game1.player.getStandingPosition() + new Vector2(-24f, -48f), flipped: false, 0f, Color.White)
+                    {
+                        interval = 3000f,
+                        totalNumberOfLoops = 99999,
+                        animationLength = 4,
+                        scale = 4f,
+                        alphaFade = 0.01f
+                    });
+                    Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Microsoft.Xna.Framework.Rectangle(276, 1985, 12, 11), Game1.player.getStandingPosition() + new Vector2(0f, -48f), flipped: false, 0f, Color.White)
+                    {
+                        interval = 3000f,
+                        totalNumberOfLoops = 99999,
+                        animationLength = 4,
+                        scale = 4f,
+                        alphaFade = 0.01f
+                    });
+                    Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Microsoft.Xna.Framework.Rectangle(276, 1985, 12, 11), Game1.player.getStandingPosition() + new Vector2(24f, -48f), flipped: false, 0f, Color.White)
+                    {
+                        interval = 3000f,
+                        totalNumberOfLoops = 99999,
+                        animationLength = 4,
+                        scale = 4f,
+                        alphaFade = 0.01f
+                    });
+                    Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Microsoft.Xna.Framework.Rectangle(276, 1985, 12, 11), Game1.player.getStandingPosition() + new Vector2(48f, -48f), flipped: false, 0f, Color.White)
+                    {
+                        interval = 3000f,
+                        totalNumberOfLoops = 99999,
+                        animationLength = 4,
+                        scale = 4f,
+                        alphaFade = 0.01f
+                    });
+                   
+                    location?.explode(Game1.player.Tile, 5, Game1.player, damageFarmers: false, 33, false);
+
+                    MagmaBlast = true;
+                }
+            }
+
+            if (Game1.player.isWearingRing("ApryllForever.MutantRings_WandaRing"))
+            {
+                if (ScarletChaos = false)
+                {
+
+
+
+
+
+
+                    int idNum;
+                    idNum = Game1.random.Next();
+                    Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite(353, 100f, 1, 2400, Game1.player.getStandingPosition() * 64f, flicker: true, flipped: false, location, Game1.player)
+                    {
+                        shakeIntensity = 5f,
+                        shakeIntensityChange = 0.2f,
+                        extraInfoForEndBehavior = idNum,
+                        endFunction = location.removeTemporarySpritesWithID
+                    });
+                    location?.explode(Game1.player.Tile, 7, Game1.player, damageFarmers: false, 33, false);
+                    ScarletChaos = true;
+                }
+            }
+
 
 
             if (Game1.player.isWearingRing("ApryllForever.MutantRings_MagnetoRing"))
@@ -463,7 +735,7 @@ namespace MutantRings
                         extraInfoForEndBehavior = idNum,
                         endFunction = location.removeTemporarySpritesWithID
                     });
-                    location?.explode(Game1.player.Tile, 7, Game1.player, damageFarmers: false, 33, false);
+                    location?.explode(Game1.player.Tile, 5, Game1.player, damageFarmers: false, 33, false);
                     Magnetobomb = true;
                 }
             }
@@ -523,7 +795,20 @@ namespace MutantRings
                 }
             }
 
-            
+
+
+            if (__instance.Name.Equals("Scarlet Witch Ring"))
+            {
+                
+
+                chaosPos = Game1.updateFloatingObjectPositionForMovement(current: new Vector2(Game1.viewport.X, Game1.viewport.Y), w: chaosPos, previous: Game1.previousViewportPosition, speed: -1f);
+                chaosPos.X = (chaosPos.X + 0.5f) % 256f;
+                chaosPos.Y = (chaosPos.Y + 0.5f) % 256f;
+            }
+
+
+
+
         }
         
 
@@ -658,6 +943,15 @@ namespace MutantRings
 
             }
 
+            if (__instance.Name.Equals("Scarlet Witch Ring"))
+            {
+                effects.AttackMultiplier.Value += 0.6f;
+                effects.LuckLevel.Value += 3;
+                effects.Speed.Value += 3;
+                //effects.WeaponSpeedMultiplier.Value -= 6;
+
+            }
+
             if (__instance.Name.Equals("Mystique Ring"))
             {
                 effects.AttackMultiplier.Value += 0.6f;
@@ -711,6 +1005,35 @@ namespace MutantRings
 
 
         }
+
+        private static void GameLocation_drawAboveAlwaysFrontLayer_Postfix(SpriteBatch b)
+        {
+            if (Game1.player.isWearingRing("ApryllForever.MutantRings_WandaRing"))
+            // b.End();
+            //   b.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp);
+            {
+                Vector2 v;
+                v = default(Vector2);
+                for (float x = -256 + (int)(chaosPos.X % 256f); x < (float)Game1.graphics.GraphicsDevice.Viewport.Width; x += 256f)
+                {
+                    for (float y = -256 + (int)(chaosPos.Y % 256f); y < (float)Game1.graphics.GraphicsDevice.Viewport.Height; y += 256f)
+                    {
+                        v.X = (int)x;
+                        v.Y = (int)y;
+                        b.Draw(Game1.mouseCursors, v, chaosSource, Color.Crimson, 0f, Vector2.Zero, 4.001f, SpriteEffects.None, 1f);
+                    }
+                }
+            }
+        }
+          //  b.End();
+
+
+        
+
+
+
+
+
     }
     }
 
