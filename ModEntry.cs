@@ -139,7 +139,7 @@ namespace MutantRings
                 MystiqueHeal = false;
             }
 
-          if(e.IsMultipleOf(4))
+          if(e.IsMultipleOf(240))
             {
                 StormStrike = false;
                 JubileeFirework = false;
@@ -147,7 +147,7 @@ namespace MutantRings
                 DazzlerFlash = false;
                 MagmaBlast = false;
             }
-            if (e.IsMultipleOf(20))
+            if (e.IsMultipleOf(240))
             {
                 if (Game1.player.isWearingRing("ApryllForever.MutantRings_WolverineRing"))
                 {
@@ -162,7 +162,7 @@ namespace MutantRings
 
                 }
             }
-            if (e.IsMultipleOf(12))
+            if (e.IsMultipleOf(180))
             {
                 if (Game1.player.isWearingRing("ApryllForever.MutantRings_WandaRing"))
                 {
@@ -198,7 +198,7 @@ namespace MutantRings
                             p.light.Value = true;
                             //p.collisionSound.Value = "crit";
                             location.projectiles.Add(p);
-                            location.playSound("flameSpell");
+                            location.playSound("thunder_small");
                         }
                     }
                 }
@@ -206,7 +206,7 @@ namespace MutantRings
 
             }
 
-            if (e.IsMultipleOf(9))
+            if (e.IsMultipleOf(180))
             {
                 if (Game1.player.isWearingRing("ApryllForever.MutantRings_StormRing"))
                 {
@@ -715,7 +715,7 @@ namespace MutantRings
                         extraInfoForEndBehavior = idNum,
                         endFunction = location.removeTemporarySpritesWithID
                     });
-                    location?.explode(Game1.player.Tile, 7, Game1.player, damageFarmers: false, 33, false);
+                    location?.explode(Game1.player.Tile, 3, Game1.player, damageFarmers: false, 33, false);
                     ScarletChaos = true;
                 }
             }
@@ -724,7 +724,7 @@ namespace MutantRings
 
             if (Game1.player.isWearingRing("ApryllForever.MutantRings_MagnetoRing"))
             {
-                if (Magnetobomb = false)
+                if (Magnetobomb == false)
                 {
                     int idNum;
                     idNum = Game1.random.Next();
@@ -742,7 +742,7 @@ namespace MutantRings
 
 
 
-            }
+        }
         
         private static void Ring_Update_Postfix(GameTime time, GameLocation environment, Farmer who, Ring __instance)
         {
@@ -975,6 +975,13 @@ namespace MutantRings
             }
 
             if (__instance.Name.Equals("Shadow Cat Ring"))
+            {
+                effects.CriticalChanceMultiplier.Value += 1;
+                effects.AttackMultiplier.Value += 0.1f;
+                effects.KnockbackMultiplier.Value += 0.1f;
+            }
+
+            if (__instance.Name.Equals("Magma Ring"))
             {
                 effects.CriticalChanceMultiplier.Value += 1;
                 effects.AttackMultiplier.Value += 0.1f;
