@@ -22,6 +22,7 @@ using StardewValley.Projectiles;
 using xTile.Dimensions;
 using StardewValley.Tools;
 using xTile.Tiles;
+using StardewValley.Enchantments;
 
 
 
@@ -130,6 +131,15 @@ namespace MutantRings
             postfix: new HarmonyMethod(typeof(ModEntry), nameof(ModEntry.GameLocation_drawAboveAlwaysFrontLayer_Postfix))
             );
 
+            harmony.Patch(
+          original: AccessTools.DeclaredMethod(typeof(Mummy), nameof(Mummy.takeDamage)),
+          prefix: new HarmonyMethod(typeof(ModEntry), nameof(ModEntry.Mummy_takeDamage_Prefix))
+          );
+
+            harmony.Patch(
+         original: AccessTools.DeclaredMethod(typeof(Bug), nameof(Bug.takeDamage)),
+         prefix: new HarmonyMethod(typeof(ModEntry), nameof(ModEntry.Bug_takeDamage_Prefix))
+         );
         }
 
         private void GameLoop_OneSecondUpdateTicked(object? sender, StardewModdingAPI.Events.OneSecondUpdateTickedEventArgs e)
@@ -139,15 +149,19 @@ namespace MutantRings
                 MystiqueHeal = false;
             }
 
-          if(e.IsMultipleOf(240))
+          if(e.IsMultipleOf(20))
+            {
+                JubileeFirework = false;
+                DazzlerFlash = false;
+            }
+
+          if(e.IsMultipleOf(120))
             {
                 StormStrike = false;
-                JubileeFirework = false;
                 Magnetobomb = false;
-                DazzlerFlash = false;
                 MagmaBlast = false;
             }
-            if (e.IsMultipleOf(240))
+            if (e.IsMultipleOf(360))
             {
                 if (Game1.player.isWearingRing("ApryllForever.MutantRings_WolverineRing"))
                 {
@@ -186,7 +200,7 @@ namespace MutantRings
                             float projectile_rotation;
                             projectile_rotation = (float)Math.Atan2(motion.Y, motion.X) + (float)Math.PI / 2f;
                             BasicProjectile p;
-                            p = new BasicProjectile((Game1.random.Next(13, 37)*3 ), 2, 3, 3, 7f, motion.X, motion.Y, Game1.player.getStandingPosition() - new Vector2(32f, 48f), null, null, null, explode: true, damagesMonsters: true, location, Game1.player);
+                            p = new BasicProjectile((Game1.random.Next(3, 11)*Game1.player.combatLevel.Value ), 2, 3, 3, 7f, motion.X, motion.Y, Game1.player.getStandingPosition() - new Vector2(32f, 48f), null, null, null, explode: true, damagesMonsters: true, location, Game1.player);
                             p.IgnoreLocationCollision = true;
                             p.ignoreObjectCollisions.Value = true;
                             p.acceleration.Value = motion;
@@ -206,7 +220,7 @@ namespace MutantRings
 
             }
 
-            if (e.IsMultipleOf(180))
+            if (e.IsMultipleOf(120))
             {
                 if (Game1.player.isWearingRing("ApryllForever.MutantRings_StormRing"))
                 {
@@ -223,13 +237,13 @@ namespace MutantRings
                         }
 
                         Monster closest_monster;
-                        closest_monster = Utility.findClosestMonsterWithinRange(location, Game1.player.getStandingPosition(), 300, ignoreUntargetables: true);
+                        closest_monster = Utility.findClosestMonsterWithinRange(location, Game1.player.getStandingPosition(), 360, ignoreUntargetables: false);
                         if (closest_monster != null && !closest_monster.Name.Equals("Truffle Crab"))
                         {
                             bool attacked = location.damageMonster(
                             areaOfEffect: closest_monster.GetBoundingBox(),
-                            minDamage: 13 * 1,
-                            maxDamage: 37 * 1,
+                            minDamage: 2 * Game1.player.combatLevel.Value,
+                            maxDamage: 7 * Game1.player.combatLevel.Value,
                             knockBackModifier: 1,
                             addedPrecision: 1,
                             critChance: 0,
@@ -297,15 +311,6 @@ namespace MutantRings
             GameLocation location;
             location = who.currentLocation;
 
-            //var id = lightSource.GetValue(__instance);
-
-            //lightSource.GetValue(__instance);
-
-            // lightSource.SetValue(__instance, (int)__instance.uniqueID + (int)who.UniqueMultiplayerID);
-
-            
-
-
             if (__instance.Name.Equals("Dark Phoenix Ring"))
                 {
                 int jewel = (int)__instance.uniqueID + (int)who.UniqueMultiplayerID;
@@ -317,17 +322,7 @@ namespace MutantRings
                 location.sharedLights[jewel] = new LightSource(1, new Vector2(who.Position.X + 21f, who.Position.Y + 64f), 5f, new Color(0, 170, 0), (int)__instance.uniqueID + (int)who.UniqueMultiplayerID, LightSource.LightContext.None, who.UniqueMultiplayerID);
 
                 fuckitall = jewel; //Otpusti, y zabud, novi den u kazhi put!!!!
-             
-                
 
-
-                // if (who.isWearingRing("ApryllForever.MutantRings_DarkPhoenixRing"))
-                // {
-                //   location.sharedLights[goat] = new LightSource(1, new Vector2(who.Position.X + 21f, who.Position.Y + 64f), 5f, new Color(0, 50, 170), (int)__instance.uniqueID + (int)who.UniqueMultiplayerID, LightSource.LightContext.None, who.UniqueMultiplayerID);
-
-                //  Game1.player.startGlowing(Color.OrangeRed, true, .25f);
-                //  Game1.player.glowingTransparency = 1f;
-                //}
             }
 
 
@@ -411,7 +406,7 @@ namespace MutantRings
                     });
                     __instance.health = __instance.maxHealth;
                     hasUsedDarkPhoenixRevive.Value = true;
-                    location?.explode(Game1.player.Tile, 3, Game1.player, damageFarmers: false, 99);
+                    location?.explode(Game1.player.Tile, 3, Game1.player, damageFarmers: false, 300);
                 }
             }
 
@@ -449,13 +444,13 @@ namespace MutantRings
                         });
                         __instance.health = __instance.maxHealth;
                         hasUsedMadelyneRevive.Value = true;
-                        location?.explode(Game1.player.Tile, 4, Game1.player, damageFarmers: false, 999);
+                        location?.explode(Game1.player.Tile, 4, Game1.player, damageFarmers: true, 999);
                     }
 
 
                 }
                 Random rnd = new Random();
-                int heal = rnd.Next(3,13);
+                int heal = rnd.Next(3,14);
 
                 if (Game1.player.isWearingRing("ApryllForever.MutantRings_MystiqueRing"))
                 { 
@@ -496,8 +491,8 @@ namespace MutantRings
                     {
                          location.damageMonster(
                     areaOfEffect: closest_monster.GetBoundingBox(),
-                    minDamage: 13 * 2,
-                    maxDamage: 37 * 2,
+                    minDamage: 3 * Game1.player.combatLevel.Value,
+                    maxDamage: 7 * Game1.player.combatLevel.Value,
                     knockBackModifier: 1,
                     addedPrecision: 1,
                     critChance: 0,
@@ -562,14 +557,28 @@ namespace MutantRings
             {
                 if (JubileeFirework == false)
                 {
+                    Monster closest_monster;
+                    closest_monster = Utility.findClosestMonsterWithinRange(location, Game1.player.getStandingPosition(), 300, ignoreUntargetables: true);
+
+                    if (closest_monster != null && !closest_monster.Name.Equals("Truffle Crab"))
+                    {
+                        location.damageMonster(
+                   areaOfEffect: closest_monster.GetBoundingBox(),
+                   minDamage: 2 * Game1.player.combatLevel.Value,
+                   maxDamage: 16 * Game1.player.combatLevel.Value,
+                   knockBackModifier: 1,
+                   addedPrecision: 1,
+                   critChance: 0,
+                   critMultiplier: 0,
+                   isBomb: false,
+                   triggerMonsterInvincibleTimer: true,
+                   who: Game1.player
+                               );
+                    }
 
 
-                   //Utility.addRainbowStarExplosion(location, Game1.player.getStandingPosition(),125 );// Game1.random.Next(6, 9));
 
 
-
-                    // Game1.player.currentLocation.explode(Game1.player.Tile, 4, Game1.player, false, 17, false);
-                    //location?.explode(Game1.player.Position, 7, Game1.player, false, 17, false);
                     {
                         Random random = new Random();
                         int fireworkType;
@@ -582,16 +591,6 @@ namespace MutantRings
                         int idNumFirework;
                         idNumFirework = Game1.random.Next();
                         location.playSound("thudStep");
-
-                        /*
-                        Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors_1_6", new Microsoft.Xna.Framework.Rectangle(spriteX, 397, 16, 16), 2400f, 1, 1, __instance.Tile * 64f, flicker: false, flipped: false, -1f, 0f, Color.White, 4f, 0f, 0f, 0f)
-                        {
-                            shakeIntensity = 0.5f,
-                            shakeIntensityChange = 0.002f,
-                            extraInfoForEndBehavior = idNum,
-                            endFunction = location.removeTemporarySpritesWithID,
-                            layerDepth = (__instance.Tile.Y * 64f + 64f - 16f) / 10000f
-                        });*/
 
                         Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors_1_6", new Microsoft.Xna.Framework.Rectangle(0, 432, 16, 16), 8f, 1, 0, __instance.Tile * 64f, flicker: false, flipped: false, -1f, 0f, Color.White, 4f, 0f, 0f, 0f)
                         {
@@ -606,8 +605,8 @@ namespace MutantRings
                             endFunction = location.removeTemporarySpritesWithID,
                             id = Game1.random.Next(20, 31),
                             Parent = location,
-                            bombDamage = 17,
-                            bombRadius = 4,
+                            //bombDamage = 17,
+                            //bombRadius = 4,
                             owner = Game1.player
 
                         });
@@ -638,7 +637,27 @@ namespace MutantRings
             {
                 if (DazzlerFlash == false)
                 {
-                    Utility.addRainbowStarExplosion(location, Game1.player.getStandingPosition(), 256);// Game1.random.Next(6, 9));
+
+                    Monster closest_monster;
+                    closest_monster = Utility.findClosestMonsterWithinRange(location, Game1.player.getStandingPosition(), 300, ignoreUntargetables: true);
+
+                    if (closest_monster != null && !closest_monster.Name.Equals("Truffle Crab"))
+                    {
+                        location.damageMonster(
+                   areaOfEffect: closest_monster.GetBoundingBox(),
+                   minDamage: 3 * Game1.player.combatLevel.Value,
+                   maxDamage: 13 * Game1.player.combatLevel.Value,
+                   knockBackModifier: 1,
+                   addedPrecision: 1,
+                   critChance: 0,
+                   critMultiplier: 0,
+                   isBomb: false,
+                   triggerMonsterInvincibleTimer: true,
+                   who: Game1.player
+                               );
+                    }
+
+                        Utility.addRainbowStarExplosion(location, Game1.player.getStandingPosition(), 1024);// Game1.random.Next(6, 9));
 
                     DazzlerFlash = true;
                 }
@@ -648,49 +667,164 @@ namespace MutantRings
             {
                 if (MagmaBlast == false)
                 {
+                    Monster closest_monster;
+                    closest_monster = Utility.findClosestMonsterWithinRange(location, Game1.player.getStandingPosition(), 300, ignoreUntargetables: true);
 
-                    Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Microsoft.Xna.Framework.Rectangle(276, 1985, 12, 11), Game1.player.getStandingPosition() + new Vector2(-48f, -48f), flipped: false, 0f, Color.White)
+                    if (closest_monster != null && !closest_monster.Name.Equals("Truffle Crab"))
+                    {
+                        location.damageMonster(
+                   areaOfEffect: closest_monster.GetBoundingBox(),
+                   minDamage: 6 * Game1.player.combatLevel.Value,
+                   maxDamage: 11 * Game1.player.combatLevel.Value,
+                   knockBackModifier: 1,
+                   addedPrecision: 1,
+                   critChance: 0,
+                   critMultiplier: 0,
+                   isBomb: false,
+                   triggerMonsterInvincibleTimer: true,
+                   who: Game1.player
+                               );
+                    }
+
+
+
+
+                    //First Row Down Full
+
+                    Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Microsoft.Xna.Framework.Rectangle(276, 1985, 12, 11), Game1.player.getStandingPosition() + new Vector2(-128f, -128f), flipped: false, 0f, Color.White)
                     {
                         interval = 3000f,
                         totalNumberOfLoops = 99999,
                         animationLength = 4,
-                        scale = 4f,
+                        scale = 8f,
                         alphaFade = 0.01f
                     });
-                    Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Microsoft.Xna.Framework.Rectangle(276, 1985, 12, 11), Game1.player.getStandingPosition() + new Vector2(-24f, -48f), flipped: false, 0f, Color.White)
+                    Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Microsoft.Xna.Framework.Rectangle(276, 1985, 12, 11), Game1.player.getStandingPosition() + new Vector2(-64f, -128f), flipped: false, 0f, Color.White)
                     {
                         interval = 3000f,
                         totalNumberOfLoops = 99999,
                         animationLength = 4,
-                        scale = 4f,
+                        scale = 8f,
                         alphaFade = 0.01f
                     });
-                    Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Microsoft.Xna.Framework.Rectangle(276, 1985, 12, 11), Game1.player.getStandingPosition() + new Vector2(0f, -48f), flipped: false, 0f, Color.White)
+                    Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Microsoft.Xna.Framework.Rectangle(276, 1985, 12, 11), Game1.player.getStandingPosition() + new Vector2(0f, -128), flipped: false, 0f, Color.White)
                     {
                         interval = 3000f,
                         totalNumberOfLoops = 99999,
                         animationLength = 4,
-                        scale = 4f,
+                        scale = 8f,
                         alphaFade = 0.01f
                     });
-                    Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Microsoft.Xna.Framework.Rectangle(276, 1985, 12, 11), Game1.player.getStandingPosition() + new Vector2(24f, -48f), flipped: false, 0f, Color.White)
+                    Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Microsoft.Xna.Framework.Rectangle(276, 1985, 12, 11), Game1.player.getStandingPosition() + new Vector2(64f, -128f), flipped: false, 0f, Color.White)
                     {
                         interval = 3000f,
                         totalNumberOfLoops = 99999,
                         animationLength = 4,
-                        scale = 4f,
+                        scale = 8f,
                         alphaFade = 0.01f
                     });
-                    Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Microsoft.Xna.Framework.Rectangle(276, 1985, 12, 11), Game1.player.getStandingPosition() + new Vector2(48f, -48f), flipped: false, 0f, Color.White)
+                    Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Microsoft.Xna.Framework.Rectangle(276, 1985, 12, 11), Game1.player.getStandingPosition() + new Vector2(128f, -128f), flipped: false, 0f, Color.White)
                     {
                         interval = 3000f,
                         totalNumberOfLoops = 99999,
                         animationLength = 4,
-                        scale = 4f,
+                        scale = 8f,
                         alphaFade = 0.01f
                     });
-                   
-                    location?.explode(Game1.player.Tile, 5, Game1.player, damageFarmers: false, 33, false);
+
+                    //2nd Row Down Full
+
+
+                    Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Microsoft.Xna.Framework.Rectangle(276, 1985, 12, 11), Game1.player.getStandingPosition() + new Vector2(-128f, -64f), flipped: false, 0f, Color.White)
+                    {
+                        interval = 3000f,
+                        totalNumberOfLoops = 99999,
+                        animationLength = 4,
+                        scale = 8f,
+                        alphaFade = 0.01f
+                    });
+                    Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Microsoft.Xna.Framework.Rectangle(276, 1985, 12, 11), Game1.player.getStandingPosition() + new Vector2(-64f, -64f), flipped: false, 0f, Color.White)
+                    {
+                        interval = 3000f,
+                        totalNumberOfLoops = 99999,
+                        animationLength = 4,
+                        scale = 8f,
+                        alphaFade = 0.01f
+                    });
+                    Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Microsoft.Xna.Framework.Rectangle(276, 1985, 12, 11), Game1.player.getStandingPosition() + new Vector2(0f, -64f), flipped: false, 0f, Color.White)
+                    {
+                        interval = 3000f,
+                        totalNumberOfLoops = 99999,
+                        animationLength = 4,
+                        scale = 8f,
+                        alphaFade = 0.01f
+                    });
+                    Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Microsoft.Xna.Framework.Rectangle(276, 1985, 12, 11), Game1.player.getStandingPosition() + new Vector2(64f, -64f), flipped: false, 0f, Color.White)
+                    {
+                        interval = 3000f,
+                        totalNumberOfLoops = 99999,
+                        animationLength = 4,
+                        scale = 8f,
+                        alphaFade = 0.01f
+                    });
+                    Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Microsoft.Xna.Framework.Rectangle(276, 1985, 12, 11), Game1.player.getStandingPosition() + new Vector2(128f, -64f), flipped: false, 0f, Color.White)
+                    {
+                        interval = 3000f,
+                        totalNumberOfLoops = 99999,
+                        animationLength = 4,
+                        scale = 8f,
+                        alphaFade = 0.01f
+                    });
+
+                    //3rd Row Down Full
+
+
+                    Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Microsoft.Xna.Framework.Rectangle(276, 1985, 12, 11), Game1.player.getStandingPosition() + new Vector2(-128f, 0f), flipped: false, 0f, Color.White)
+                    {
+                        interval = 3000f,
+                        totalNumberOfLoops = 99999,
+                        animationLength = 4,
+                        scale = 8f,
+                        alphaFade = 0.01f
+                    });
+                    Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Microsoft.Xna.Framework.Rectangle(276, 1985, 12, 11), Game1.player.getStandingPosition() + new Vector2(-64f, 0f), flipped: false, 0f, Color.White)
+                    {
+                        interval = 3000f,
+                        totalNumberOfLoops = 99999,
+                        animationLength = 4,
+                        scale = 8f,
+                        alphaFade = 0.01f
+                    });
+                    Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Microsoft.Xna.Framework.Rectangle(276, 1985, 12, 11), Game1.player.getStandingPosition() + new Vector2(0f, 0f), flipped: false, 0f, Color.White)
+                    {
+                        interval = 3000f,
+                        totalNumberOfLoops = 99999,
+                        animationLength = 4,
+                        scale = 8f,
+                        alphaFade = 0.01f
+                    });
+                    Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Microsoft.Xna.Framework.Rectangle(276, 1985, 12, 11), Game1.player.getStandingPosition() + new Vector2(64f,0f), flipped: false, 0f, Color.White)
+                    {
+                        interval = 3000f,
+                        totalNumberOfLoops = 99999,
+                        animationLength = 4,
+                        scale = 8f,
+                        alphaFade = 0.01f
+                    });
+                    Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite("LooseSprites\\Cursors", new Microsoft.Xna.Framework.Rectangle(276, 1985, 12, 11), Game1.player.getStandingPosition() + new Vector2(128f, 0f), flipped: false, 0f, Color.White)
+                    {
+                        interval = 3000f,
+                        totalNumberOfLoops = 99999,
+                        animationLength = 4,
+                        scale = 8f,
+                        alphaFade = 0.01f
+                    });
+
+
+
+
+
+                    //location?.explode(Game1.player.Tile, 5, Game1.player, damageFarmers: false, 33, false);
 
                     MagmaBlast = true;
                 }
@@ -701,11 +835,6 @@ namespace MutantRings
                 if (ScarletChaos = false)
                 {
 
-
-
-
-
-
                     int idNum;
                     idNum = Game1.random.Next();
                     Game1.Multiplayer.broadcastSprites(location, new TemporaryAnimatedSprite(353, 100f, 1, 2400, Game1.player.getStandingPosition() * 64f, flicker: true, flipped: false, location, Game1.player)
@@ -715,7 +844,7 @@ namespace MutantRings
                         extraInfoForEndBehavior = idNum,
                         endFunction = location.removeTemporarySpritesWithID
                     });
-                    location?.explode(Game1.player.Tile, 3, Game1.player, damageFarmers: false, 33, false);
+                    location?.explode(Game1.player.Tile, 3, Game1.player, damageFarmers: false, 17 * Game1.player.combatLevel.Value, false);
                     ScarletChaos = true;
                 }
             }
@@ -735,7 +864,7 @@ namespace MutantRings
                         extraInfoForEndBehavior = idNum,
                         endFunction = location.removeTemporarySpritesWithID
                     });
-                    location?.explode(Game1.player.Tile, 5, Game1.player, damageFarmers: false, 33, false);
+                    location?.explode(Game1.player.Tile, 5, Game1.player, damageFarmers: false, 17 * Game1.player.combatLevel.Value, false);
                     Magnetobomb = true;
                 }
             }
@@ -844,7 +973,7 @@ namespace MutantRings
 
             if (Game1.player.isWearingRing("ApryllForever.MutantRings_DarkPhoenixRing") || Game1.player.isWearingRing("ApryllForever.MutantRings_MadelyneRing"))
             {
-                location?.explode(monster.Tile, 2, who, damageFarmers: false, -1, !(location is Farm) && !(location is SlimeHutch) && !(location is FarmHouse));
+                location?.explode(monster.Tile, 2, who, damageFarmers: false, 37 * Game1.player.combatLevel.Value, !(location is Farm) && !(location is SlimeHutch) && !(location is FarmHouse));
 
             }
 
@@ -861,10 +990,12 @@ namespace MutantRings
                         objects.Add(objectsSplit[l]);
                     }
                 }
-                who.health = Math.Min(who.maxHealth, who.health + 10);
-                who.Stamina = Math.Min(who.MaxStamina, who.Stamina + 12);
+                who.health = Math.Min(who.maxHealth, who.health + 17);
+                who.Stamina = Math.Min(who.MaxStamina, who.Stamina + 13);
 
             }
+
+
             if (Game1.player.isWearingRing("ApryllForever.MutantRings_EmmaRing"))
             {
                  Item item = ItemRegistry.Create("72");
@@ -925,7 +1056,97 @@ namespace MutantRings
 
         }
 
-        private static void Ring_AddEquipmentEffects_Postfix(BuffEffects effects,Ring __instance)
+
+        private static bool Mummy_takeDamage_Prefix(int damage, int xTrajectory, int yTrajectory, bool isBomb, double addedPrecision, Farmer who, Monster __instance, ref int __result)
+        {
+            if (!Game1.player.isWearingRing("ApryllForever.MutantRings_MystiqueRing"))
+            { return true; }
+
+            if (Game1.player.isWearingRing("ApryllForever.MutantRings_MystiqueRing"))
+            {
+
+                {
+
+                    int actualDamage;
+                    actualDamage = Math.Max(1, damage - (int)__instance.resilience.Value);
+
+                    if (Game1.random.NextDouble() < __instance.missChance.Value - __instance.missChance.Value * addedPrecision)
+                    {
+                        actualDamage = -1;
+                    }
+                    else
+                    {
+                        __instance.Slipperiness = 2;
+                        __instance.Health -= actualDamage;
+                        __instance.setTrajectory(xTrajectory, yTrajectory);
+                        __instance.currentLocation.playSound("shadowHit");
+                        __instance.currentLocation.playSound("skeletonStep");
+                        __instance.IsWalkingTowardPlayer = true;
+                        if (__instance.Health <= 0)
+                        {
+
+                            {
+                                Utility.makeTemporarySpriteJuicier(new TemporaryAnimatedSprite(44, __instance.Position, Color.BlueViolet, 10)
+                                {
+                                    holdLastFrame = true,
+                                    alphaFade = 0.01f,
+                                    interval = 70f
+                                }, __instance.currentLocation);
+                                __instance.currentLocation.playSound("ghost");
+                            }
+
+                        }
+                    }
+
+                    __result = actualDamage;
+
+                    return false;
+
+                }
+            }
+            return true;
+        }
+
+        private static bool Bug_takeDamage_Prefix(int damage, int xTrajectory, int yTrajectory, bool isBomb, double addedPrecision, Farmer who, Monster __instance, ref int __result)
+        {
+            if (!Game1.player.isWearingRing("ApryllForever.MutantRings_EmmaRing"))
+            { return true; }
+
+            if (Game1.player.isWearingRing("ApryllForever.MutantRings_EmmaRing"))
+            {
+                int actualDamage;
+                actualDamage = Math.Max(1, damage - (int)__instance.resilience.Value);
+
+                if (Game1.random.NextDouble() < __instance.missChance.Value - __instance.missChance.Value * addedPrecision)
+                {
+                    actualDamage = -1;
+                }
+                else
+                {
+                    __instance.Health -= actualDamage;
+                    __instance.currentLocation.playSound("hitEnemy");
+                    __instance.setTrajectory(xTrajectory / 3, yTrajectory / 3);
+                    if ((bool)__instance.isHardModeMonster.Value)
+                    {
+                        __instance.FacingDirection = Math.Abs((__instance.FacingDirection + Game1.random.Next(-1, 2)) % 4);
+                        __instance.Halt();
+                        __instance.setMovingInFacingDirection();
+                    }
+                    if (__instance.Health <= 0)
+                    {
+                        __instance.deathAnimation();
+                    }
+                }
+
+                __result = actualDamage;
+
+                return false;
+            }
+            return true;
+        }
+
+
+                private static void Ring_AddEquipmentEffects_Postfix(BuffEffects effects,Ring __instance)
         {
             if (__instance.Name.Equals("Dark Phoenix Ring"))
             {
@@ -937,8 +1158,8 @@ namespace MutantRings
 
                 if (__instance.Name.Equals("Rogue Ring"))
             {
-                effects.AttackMultiplier.Value += 0.6f;
-                effects.Defense.Value += 2;
+                effects.AttackMultiplier.Value += 0.9f;
+                effects.Defense.Value += 6;
                 effects.Immunity.Value += 2;
 
             }
